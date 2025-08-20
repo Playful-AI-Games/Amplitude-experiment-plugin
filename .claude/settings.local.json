@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:docs.unity3d.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(mkdir:*)",
+      "Bash(grep:*)",
+      "Bash(cp:*)",
+      "Bash(xcodebuild:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

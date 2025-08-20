@@ -30,9 +30,9 @@ public class AmplitudeExperimentBridge {
     private static String unityGameObjectName = "AmplitudeExperimentManager";
     private static boolean isInitialized = false;
 
-    // Initialize the Amplitude Experiment client (standalone mode)
+    // Initialize the Amplitude Experiment client (try Analytics first, then standalone)
     public static void initialize(String deploymentKey, String instanceName) {
-        initialize(deploymentKey, instanceName, false);
+        initialize(deploymentKey, instanceName, true);  // Default to trying Analytics first
     }
     
     // Initialize with option to use Analytics integration
@@ -42,53 +42,79 @@ public class AmplitudeExperimentBridge {
             return;
         }
 
-        try {
-            Context context = UnityPlayer.currentActivity.getApplicationContext();
-            Application application = (Application) context;
-            
-            // Enable debug logging to see what's happening
-            ExperimentConfig.Builder configBuilder = ExperimentConfig.builder()
-                .debug(true)  // Enable debug logging
-                .fallbackVariant(new Variant("control", null, null, null, null))
-                .automaticExposureTracking(true)
-                .fetchTimeoutMillis(10000)
-                .retryFetchOnFailure(true);
+        Context context = UnityPlayer.currentActivity.getApplicationContext();
+        Application application = (Application) context;
+        
+        // Build configuration
+        ExperimentConfig.Builder configBuilder = ExperimentConfig.builder()
+            .debug(true)  // Enable debug logging
+            .fallbackVariant(new Variant("control", null, null, null, null))
+            .automaticExposureTracking(true)
+            .fetchTimeoutMillis(10000)
+            .retryFetchOnFailure(true);
 
-            if (instanceName != null && !instanceName.isEmpty()) {
-                configBuilder.instanceName(instanceName);
-            }
-            
-            ExperimentConfig config = configBuilder.build();
+        if (instanceName != null && !instanceName.isEmpty()) {
+            configBuilder.instanceName(instanceName);
+        }
+        
+        ExperimentConfig config = configBuilder.build();
 
-            if (useAnalyticsIntegration) {
-                // Only use Analytics integration if explicitly requested
-                // AND Analytics SDK is already initialized
-                Log.d(TAG, "Attempting to initialize WITH Amplitude Analytics integration");
+        // Smart initialization: Try Analytics if available, otherwise use standalone
+        boolean successfullyInitialized = false;
+        
+        // Check if we should attempt Analytics integration
+        boolean shouldTryAnalytics = useAnalyticsIntegration && isAnalyticsAvailable();
+        
+        // Try 1: Attempt Analytics integration if it's available
+        if (shouldTryAnalytics) {
+            try {
+                Log.d(TAG, "Analytics SDK detected - attempting integration...");
                 experimentClient = Experiment.initializeWithAmplitudeAnalytics(
                     application,
                     deploymentKey,
                     config
                 );
-            } else {
-                // Use standalone initialization (default)
-                Log.d(TAG, "Using STANDALONE Experiment initialization (not integrated with Analytics)");
+                
+                if (experimentClient != null) {
+                    successfullyInitialized = true;
+                    Log.d(TAG, "✓ Successfully initialized WITH Analytics integration");
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "Analytics integration failed, will fall back to standalone: " + e.getMessage());
+            }
+        } else if (useAnalyticsIntegration) {
+            Log.d(TAG, "Analytics integration requested but Analytics SDK not available/initialized");
+        }
+        
+        // Try 2: Use standalone mode if Analytics didn't work or wasn't available
+        if (!successfullyInitialized) {
+            try {
+                Log.d(TAG, "Initializing in STANDALONE mode (no Analytics integration)...");
                 experimentClient = Experiment.initialize(
                     application,
                     deploymentKey,
                     config
                 );
+                
+                if (experimentClient != null) {
+                    successfullyInitialized = true;
+                    Log.d(TAG, "✓ Successfully initialized in STANDALONE mode");
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Standalone initialization also failed", e);
+                sendErrorToUnity("OnInitializeError", "Failed to initialize: " + e.getMessage());
+                return;
             }
-            
-            if (experimentClient == null) {
-                throw new RuntimeException("Failed to initialize Experiment client - returned null");
-            }
-            
-            isInitialized = true;
-            Log.d(TAG, "AmplitudeExperiment initialized successfully with client: " + experimentClient);
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to initialize AmplitudeExperiment", e);
-            sendErrorToUnity("OnInitializeError", e.getMessage());
         }
+        
+        if (!successfullyInitialized || experimentClient == null) {
+            Log.e(TAG, "Failed to initialize Experiment client - all methods failed");
+            sendErrorToUnity("OnInitializeError", "Failed to initialize Experiment client");
+            return;
+        }
+        
+        isInitialized = true;
+        Log.d(TAG, "AmplitudeExperiment initialized successfully with client: " + experimentClient);
     }
 
     // Fetch variants for a user
@@ -303,6 +329,29 @@ public class AmplitudeExperimentBridge {
     // Check if initialized
     public static boolean isInitialized() {
         return isInitialized;
+    }
+    
+    // Check if Amplitude Analytics SDK is available and initialized
+    private static boolean isAnalyticsAvailable() {
+        try {
+            // Try to check if Analytics SDK class exists and is initialized
+            Class<?> amplitudeClass = Class.forName("com.amplitude.api.Amplitude");
+            Object instance = amplitudeClass.getMethod("getInstance").invoke(null);
+            if (instance != null) {
+                // Check if it's initialized by checking if userId or deviceId is set
+                Object userId = amplitudeClass.getMethod("getUserId").invoke(instance);
+                Object deviceId = amplitudeClass.getMethod("getDeviceId").invoke(instance);
+                boolean hasIdentity = (userId != null && !userId.toString().isEmpty()) || 
+                                     (deviceId != null && !deviceId.toString().isEmpty());
+                Log.d(TAG, "Analytics SDK found, initialized: " + hasIdentity);
+                return hasIdentity;
+            }
+        } catch (ClassNotFoundException e) {
+            Log.d(TAG, "Analytics SDK not found in classpath");
+        } catch (Exception e) {
+            Log.d(TAG, "Error checking Analytics SDK: " + e.getMessage());
+        }
+        return false;
     }
     
     // Check network connectivity

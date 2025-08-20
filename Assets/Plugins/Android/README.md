@@ -43,7 +43,7 @@ AmplitudeExperiment.Instance.Initialize("YOUR_DEPLOYMENT_KEY");
 
 ### Basic Implementation
 ```csharp
-using Amplitude.Experiment;
+using AmplitudeUnityPlugin.Experiment;
 using System.Collections.Generic;
 
 public class MyGameManager : MonoBehaviour

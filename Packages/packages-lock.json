@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.amplitude.unityplugin": {
+      "version": "https://github.com/amplitude/unity-plugin.git?path=/Assets",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "28b74ce7e1c90c916a91cb01c1d106e00ecbf649"
+    },
     "com.unity.2d.animation": {
       "version": "10.1.3",
       "depth": 1,

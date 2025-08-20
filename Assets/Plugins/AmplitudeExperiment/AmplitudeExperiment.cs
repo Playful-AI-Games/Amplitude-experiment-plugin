@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using System.Collections.Generic;
 
-namespace Amplitude.Experiment
+namespace AmplitudeUnityPlugin.Experiment
 {
     [Serializable]
     public class Variant

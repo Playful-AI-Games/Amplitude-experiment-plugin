@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.amplitude.unityplugin": "https://github.com/amplitude/unity-plugin.git?path=/Assets",
     "com.unity.collab-proxy": "2.9.1",
     "com.unity.feature.2d": "2.0.1",
     "com.unity.feature.mobile": "1.0.0",

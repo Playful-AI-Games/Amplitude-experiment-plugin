@@ -1,5 +1,5 @@
 using UnityEngine;
-using Amplitude.Experiment;
+using AmplitudeUnityPlugin.Experiment;
 using System.Collections.Generic;
 
 public class AmplitudeExperimentExample : MonoBehaviour

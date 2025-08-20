@@ -1,23 +1,55 @@
+// Android Resolver Repos Start
+([rootProject] + (rootProject.subprojects as List)).each { project ->
+    project.repositories {
+        def unityProjectPath = $/file:///**DIR_UNITYPROJECT**/$.replace("\\", "/")
+        maven {
+            url "https://maven.google.com"
+        }
+        maven {
+            url "https://repo.maven.apache.org/maven2" // Packages/com.amplitude.unityplugin/Editor/AmplitudeDependencies.xml:5
+        }
+        maven {
+            url "https://maven.google.com" // Packages/com.amplitude.unityplugin/Editor/AmplitudeDependencies.xml:11, Packages/com.amplitude.unityplugin/Editor/AmplitudeDependencies.xml:17
+        }
+        mavenLocal()
+        mavenCentral()
+    }
+}
+// Android Resolver Repos End
 apply plugin: 'com.android.library'
 apply from: '../shared/keepUnitySymbols.gradle'
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     
-    // Amplitude Experiment SDK
-    implementation 'com.amplitude:experiment-android-client:1.12.0'
-    
-    // Amplitude Analytics SDK (for integration)
-    implementation 'com.amplitude:analytics-android:1.16.8'
-    
-    // Required dependencies
-    implementation 'com.squareup.okhttp3:okhttp:4.11.0'
-    implementation 'org.json:json:20231013'
-    
-    // Unity dependencies
+// Android Resolver Dependencies Start
+    implementation 'com.amplitude:android-sdk:2.40.+' // Packages/com.amplitude.unityplugin/Editor/AmplitudeDependencies.xml:11
+    implementation 'com.amplitude:experiment-android-client:1.12.0' // Assets/Plugins/Android/Editor/AmplitudeExperimentDependencies.xml:11
+    implementation 'com.squareup.okhttp3:okhttp:4.11.0' // Assets/Plugins/Android/Editor/AmplitudeExperimentDependencies.xml:14
+    // implementation 'com.squareup.okhttp3:okhttp:4.2.2' // Packages/com.amplitude.unityplugin/Editor/AmplitudeDependencies.xml:17
+// Android Resolver Dependencies End
 **DEPS**
 }
 
+configurations.all {
+    resolutionStrategy {
+        force 'com.squareup.okhttp3:okhttp:4.11.0'
+        force 'com.amplitude:android-sdk:2.40.3'
+    }
+}
+
+// Android Resolver Exclusions Start
+android {
+  packaging {
+      exclude ('/lib/armeabi/*' + '*')
+      exclude ('/lib/armeabi-v7a/*' + '*')
+      exclude ('/lib/mips/*' + '*')
+      exclude ('/lib/mips64/*' + '*')
+      exclude ('/lib/x86/*' + '*')
+      exclude ('/lib/x86_64/*' + '*')
+  }
+}
+// Android Resolver Exclusions End
 android {
     namespace "com.unity3d.player"
     ndkPath "**NDKPATH**"

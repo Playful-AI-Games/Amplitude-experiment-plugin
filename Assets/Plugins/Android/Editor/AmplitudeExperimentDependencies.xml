@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<dependencies>
+  <androidPackages>
+    <!-- Amplitude Experiment Android SDK -->
+    <androidPackage spec="com.amplitude:experiment-android-client:1.12.0" />
+    
+    <!-- Amplitude Analytics Android SDK (optional, for integration) -->
+    <androidPackage spec="com.amplitude:analytics-android:1.16.8" />
+    
+    <!-- Required dependencies -->
+    <androidPackage spec="com.squareup.okhttp3:okhttp:4.11.0" />
+    
+    <!-- JSON handling (usually included by Android) -->
+    <!-- <androidPackage spec="org.json:json:20231013" /> -->
+  </androidPackages>
+</dependencies>

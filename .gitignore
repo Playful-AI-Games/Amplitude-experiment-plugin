@@ -18,6 +18,9 @@ Build/
 Builds/
 ExportedObj/
 build/
+.utmp/
+lib_burst_generated.txt
+
 
 # Cache and crash reports
 *.stacktrace

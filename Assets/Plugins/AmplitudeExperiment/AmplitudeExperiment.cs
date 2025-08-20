@@ -55,6 +55,21 @@ namespace Amplitude.Experiment
         private static extern void _AmplitudeExperiment_SetUnityGameObject(string gameObjectName);
         #endif
 
+        #if UNITY_ANDROID && !UNITY_EDITOR
+        private static AndroidJavaClass androidPlugin;
+        private static AndroidJavaClass AndroidPlugin
+        {
+            get
+            {
+                if (androidPlugin == null)
+                {
+                    androidPlugin = new AndroidJavaClass("com.amplitude.experiment.unity.AmplitudeExperimentUnityPlugin");
+                }
+                return androidPlugin;
+            }
+        }
+        #endif
+
         public static AmplitudeExperiment Instance
         {
             get
@@ -110,9 +125,21 @@ namespace Amplitude.Experiment
             _AmplitudeExperiment_SetUnityGameObject(gameObject.name);
             _AmplitudeExperiment_Initialize(apiKey, instanceName);
             isInitialized = true;
-            Debug.Log($"AmplitudeExperiment: Initialized with API key");
+            Debug.Log($"AmplitudeExperiment: Initialized with API key (iOS)");
+            #elif UNITY_ANDROID && !UNITY_EDITOR
+            AndroidPlugin.CallStatic("setUnityGameObject", gameObject.name);
+            if (string.IsNullOrEmpty(instanceName))
+            {
+                AndroidPlugin.CallStatic("initialize", apiKey);
+            }
+            else
+            {
+                AndroidPlugin.CallStatic("initialize", apiKey, instanceName);
+            }
+            isInitialized = true;
+            Debug.Log($"AmplitudeExperiment: Initialized with API key (Android)");
             #else
-            Debug.Log($"AmplitudeExperiment: Initialize called with apiKey (Editor/non-iOS)");
+            Debug.Log($"AmplitudeExperiment: Initialize called with apiKey (Editor/non-supported platform)");
             isInitialized = true;
             #endif
         }
@@ -138,7 +165,6 @@ namespace Amplitude.Experiment
             onFetchSuccess = onSuccess;
             onFetchError = onError;
 
-            #if UNITY_IOS && !UNITY_EDITOR
             string userPropertiesJson = null;
             if (user.userProperties != null && user.userProperties.Count > 0)
             {
@@ -146,8 +172,11 @@ namespace Amplitude.Experiment
                 var jsonDict = new Dictionary<string, object>(user.userProperties);
                 userPropertiesJson = JsonUtility.ToJson(new Serializable(jsonDict));
             }
-            
+
+            #if UNITY_IOS && !UNITY_EDITOR
             _AmplitudeExperiment_Fetch(user.userId, user.deviceId, userPropertiesJson);
+            #elif UNITY_ANDROID && !UNITY_EDITOR
+            AndroidPlugin.CallStatic("fetch", user.userId, user.deviceId, userPropertiesJson);
             #else
             Debug.Log($"AmplitudeExperiment: Fetch called for user: {user.userId ?? "anonymous"}");
             onSuccess?.Invoke();
@@ -188,6 +217,23 @@ namespace Amplitude.Experiment
                     Debug.LogError($"AmplitudeExperiment: Failed to parse variant JSON: {e.Message}");
                 }
             }
+            #elif UNITY_ANDROID && !UNITY_EDITOR
+            string jsonString = AndroidPlugin.CallStatic<string>("getVariant", flagKey);
+            if (!string.IsNullOrEmpty(jsonString))
+            {
+                try
+                {
+                    Variant variant = JsonUtility.FromJson<Variant>(jsonString);
+                    if (variant != null)
+                    {
+                        return variant;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"AmplitudeExperiment: Failed to parse variant JSON: {e.Message}");
+                }
+            }
             #else
             Debug.Log($"AmplitudeExperiment: GetVariant called for flag: {flagKey}");
             #endif
@@ -205,9 +251,12 @@ namespace Amplitude.Experiment
 
             #if UNITY_IOS && !UNITY_EDITOR
             _AmplitudeExperiment_Clear();
-            Debug.Log("AmplitudeExperiment: Cleared all variants");
+            Debug.Log("AmplitudeExperiment: Cleared all variants (iOS)");
+            #elif UNITY_ANDROID && !UNITY_EDITOR
+            AndroidPlugin.CallStatic("clear");
+            Debug.Log("AmplitudeExperiment: Cleared all variants (Android)");
             #else
-            Debug.Log("AmplitudeExperiment: Clear called (Editor/non-iOS)");
+            Debug.Log("AmplitudeExperiment: Clear called (Editor/non-supported platform)");
             #endif
         }
 

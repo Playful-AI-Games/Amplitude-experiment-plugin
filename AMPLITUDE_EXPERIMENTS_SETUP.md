@@ -6,27 +6,23 @@ This integration allows you to use Amplitude Experiments SDK in your Unity iOS b
 ## Prerequisites
 1. Unity 2019.4 or later
 2. iOS deployment target 12.0 or higher
-3. External Dependency Manager for Unity (EDM4U) - Install from: https://github.com/googlesamples/unity-jar-resolver
+3. CocoaPods installed (`sudo gem install cocoapods`)
 
 ## Setup Instructions
 
-### 1. Install External Dependency Manager for Unity (EDM4U)
-- Download the latest .unitypackage from the EDM4U releases page
-- Import it into your Unity project via Assets → Import Package
-
-### 2. Configure Unity Build Settings
+### 1. Configure Unity Build Settings
 - Switch platform to iOS (File → Build Settings → iOS → Switch Platform)
 - Player Settings:
   - Set Minimum iOS Version to 12.0
   - Set Architecture to ARM64
   - Ensure Scripting Backend is set to IL2CPP
 
-### 3. Get Your Deployment Key
+### 2. Get Your Deployment Key
 - Log into your Amplitude Experiment account
 - Navigate to your project settings
 - Copy your Deployment Key (also called API Key)
 
-### 4. Initialize the SDK
+### 3. Initialize the SDK
 ```csharp
 using Amplitude.Experiment;
 
@@ -66,24 +62,29 @@ Assets/
 ├── Plugins/
 │   ├── iOS/
 │   │   ├── AmplitudeExperiment/
-│   │   │   ├── AmplitudeExperimentBridge.mm    # Native bridge
-│   │   │   └── AmplitudeExperimentBridge.h     # Bridge header
+│   │   │   ├── AmplitudeExperimentBridge.mm    # Native bridge (runtime reflection)
+│   │   │   ├── AmplitudeExperimentBridge.h     # Bridge header
+│   │   │   └── AmplitudeExperimentInit.mm      # Unity initialization
 │   │   └── Editor/
-│   │       ├── AmplitudeExperimentDependencies.xml  # CocoaPods config
 │   │       └── AmplitudeExperimentPostProcessor.cs  # Build processor
 │   └── AmplitudeExperiment/
 │       └── AmplitudeExperiment.cs               # C# API
-└── Scripts/
-    └── AmplitudeExperimentExample.cs            # Usage example
+├── Scripts/
+│   └── AmplitudeExperimentExample.cs            # Usage example
+└── Editor/
+    └── iOSPostProcessBuild.cs                   # CocoaPods integration
 ```
 
 ## Building for iOS
 
 ### First Build
 1. Build your Unity project (File → Build Settings → Build)
-2. Open the generated Xcode workspace (not the .xcodeproj):
-   - The workspace file will be `Unity-iPhone.xcworkspace`
-3. EDM4U will automatically run `pod install` to fetch the Amplitude SDK
+2. The post-processor will automatically:
+   - Create a Podfile with AmplitudeExperiment dependency
+   - Run `pod install` to fetch the SDK
+   - Generate `Unity-iPhone.xcworkspace`
+3. Open the generated Xcode workspace (not the .xcodeproj):
+   - Use `Unity-iPhone.xcworkspace` for all builds
 4. Build and run from Xcode
 
 ### Subsequent Builds
@@ -93,10 +94,9 @@ Assets/
 ## Troubleshooting
 
 ### CocoaPods Not Installing
-- Ensure EDM4U is properly installed
-- Check Assets → External Dependency Manager → iOS Resolver → Settings
-- Enable "Enable Auto-Resolution"
-- Try manually running: Assets → External Dependency Manager → iOS Resolver → Force Resolve
+- Ensure CocoaPods is installed: `pod --version`
+- If the post-processor fails, manually run `pod install` in the Xcode project directory
+- Check that you have the correct Ruby environment set up
 
 ### Build Errors in Xcode
 - Always open the `.xcworkspace` file, not `.xcodeproj`

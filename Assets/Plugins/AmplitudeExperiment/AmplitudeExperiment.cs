@@ -107,7 +107,14 @@ namespace AmplitudeUnityPlugin.Experiment
             }
         }
 
+        // Initialize without Analytics integration (standalone mode)
         public void Initialize(string apiKey, string instanceName = null)
+        {
+            Initialize(apiKey, instanceName, false);
+        }
+
+        // Initialize with explicit control over Analytics integration
+        public void Initialize(string apiKey, string instanceName, bool useAnalyticsIntegration)
         {
             if (string.IsNullOrEmpty(apiKey))
             {
@@ -128,16 +135,16 @@ namespace AmplitudeUnityPlugin.Experiment
             Debug.Log($"AmplitudeExperiment: Initialized with API key (iOS)");
             #elif UNITY_ANDROID && !UNITY_EDITOR
             AndroidPlugin.CallStatic("setUnityGameObject", gameObject.name);
-            if (string.IsNullOrEmpty(instanceName))
-            {
-                AndroidPlugin.CallStatic("initialize", apiKey);
-            }
-            else
-            {
-                AndroidPlugin.CallStatic("initialize", apiKey, instanceName);
-            }
+            
+            // Pass the useAnalyticsIntegration flag to Android
+            // The Java bridge expects (String, String, boolean) signature
+            string instance = string.IsNullOrEmpty(instanceName) ? "" : instanceName;
+            AndroidPlugin.CallStatic("initialize", apiKey, instance, useAnalyticsIntegration);
+            
             isInitialized = true;
-            Debug.Log($"AmplitudeExperiment: Initialized with API key (Android)");
+            
+            string integrationMode = useAnalyticsIntegration ? "with Analytics integration" : "standalone";
+            Debug.Log($"AmplitudeExperiment: Initialized {integrationMode} (Android)");
             #else
             Debug.Log($"AmplitudeExperiment: Initialize called with apiKey (Editor/non-supported platform)");
             isInitialized = true;

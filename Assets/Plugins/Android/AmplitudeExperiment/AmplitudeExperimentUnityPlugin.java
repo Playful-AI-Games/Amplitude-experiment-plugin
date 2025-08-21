@@ -11,20 +11,33 @@ public class AmplitudeExperimentUnityPlugin {
     private static final String TAG = "AmplitudeExpUnity";
 
     /**
-     * Initialize the Amplitude Experiment SDK
+     * Initialize the Amplitude Experiment SDK with explicit Analytics integration control
+     * @param deploymentKey The deployment key for your Amplitude Experiment project
+     * @param instanceName Optional instance name for multiple instances
+     * @param useAnalyticsIntegration Whether to integrate with Amplitude Analytics SDK
+     */
+    public static void initialize(String deploymentKey, String instanceName, boolean useAnalyticsIntegration) {
+        Log.d(TAG, "Initializing AmplitudeExperiment with deployment key (Analytics integration: " + useAnalyticsIntegration + ")");
+        
+        // Initialize synchronously to avoid race conditions
+        // The SDK handles its own threading internally
+        AmplitudeExperimentBridge.initialize(deploymentKey, instanceName, useAnalyticsIntegration);
+    }
+
+    /**
+     * Initialize the Amplitude Experiment SDK (defaults to standalone mode)
      * @param deploymentKey The deployment key for your Amplitude Experiment project
      * @param instanceName Optional instance name for multiple instances
      */
     public static void initialize(String deploymentKey, String instanceName) {
-        Log.d(TAG, "Initializing AmplitudeExperiment with deployment key");
+        Log.d(TAG, "Initializing AmplitudeExperiment with deployment key (standalone mode)");
         
-        // Initialize synchronously to avoid race conditions
-        // The SDK handles its own threading internally
-        AmplitudeExperimentBridge.initialize(deploymentKey, instanceName);
+        // Default to standalone mode (no Analytics integration)
+        AmplitudeExperimentBridge.initialize(deploymentKey, instanceName, false);
     }
 
     /**
-     * Initialize with just deployment key (no instance name)
+     * Initialize with just deployment key (no instance name, standalone mode)
      * @param deploymentKey The deployment key for your Amplitude Experiment project
      */
     public static void initialize(String deploymentKey) {

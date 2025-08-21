@@ -10,9 +10,26 @@ public class AmplitudeExperimentExample : MonoBehaviour
     [Header("Test Settings")]
     [SerializeField] private string testUserId = "test_user_123";
     [SerializeField] private string testFlagKey = "new_feature_flag";
+
+    [SerializeField] private bool initializeAnalyticsStack = false;
     
     private AmplitudeExperiment experiment;
-    
+
+    void Awake()
+    {
+        if (initializeAnalyticsStack)
+        {
+            Amplitude amplitude = Amplitude.getInstance();
+            amplitude.setServerUrl("https://api2.amplitude.com");
+            amplitude.logging = true;
+            amplitude.trackSessionEvents(true);
+            amplitude.useAdvertisingIdForDeviceId();
+            amplitude.setUseDynamicConfig(true);
+            amplitude.setServerZone(AmplitudeServerZone.US);
+            amplitude.init(deploymentKey);
+        }
+    }
+
     void Start()
     {
         // Get the singleton instance
@@ -27,7 +44,10 @@ public class AmplitudeExperimentExample : MonoBehaviour
         Debug.Log("Initializing Amplitude Experiment SDK...");
         
         // Initialize with your deployment key
-        experiment.Initialize(deploymentKey);
+        // Pass true as the third parameter if you've initialized Amplitude Analytics
+        // Pass false (or omit) for standalone mode
+        bool useAnalyticsIntegration = initializeAnalyticsStack;
+        experiment.Initialize(deploymentKey, null, useAnalyticsIntegration);
         
         // Fetch variants for the current user
         FetchVariants();

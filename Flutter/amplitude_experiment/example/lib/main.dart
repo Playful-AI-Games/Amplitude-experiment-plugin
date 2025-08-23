@@ -1,7 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:amplitude_experiment/amplitude_experiment.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Load environment variables (optional)
+  try {
+    await dotenv.load(fileName: ".env");
+    print('Loaded .env file successfully');
+  } catch (e) {
+    // .env file is optional, will use default if not found
+    print('Note: .env file not found or could not be loaded: $e');
+    print('You can create a .env file with: AMPLITUDE_API_KEY=your_key_here');
+  }
   runApp(const MyApp());
 }
 
@@ -50,9 +62,23 @@ class _MyHomePageState extends State<MyHomePage> {
 
     try {
       // Initialize the Experiment client
-      // Replace with your actual API key
+      // Get API key from environment variables or use a default for testing
+      final apiKey = dotenv.env['AMPLITUDE_API_KEY'] ?? 'YOUR_API_KEY_HERE';
+      
+      print('Using API key: ${apiKey.substring(0, 10)}...');  // Show first 10 chars for debugging
+      
+      if (apiKey == 'YOUR_API_KEY_HERE' || apiKey.isEmpty) {
+        // Show warning but allow app to run
+        setState(() {
+          _statusMessage = 'Warning: No valid API key found. Create .env file with AMPLITUDE_API_KEY=your_key';
+        });
+        // Don't continue with invalid key
+        _experimentClient = null;
+        return;
+      }
+      
       _experimentClient = Experiment.initialize(
-        '9f0e2018a718d88713eda6429a467091',
+        apiKey,
         config: const ExperimentConfig(
           debug: true,
           fetchOnStart: true,
@@ -83,7 +109,14 @@ class _MyHomePageState extends State<MyHomePage> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _statusMessage = 'Error: $e';
+        _statusMessage = 'Initialization failed: $e';
+      });
+      // Log the full error for debugging
+      print('Initialization error: $e');
+      print('Stack trace: ${StackTrace.current}');
+    } finally {
+      setState(() {
+        _isLoading = false;
       });
     }
   }
@@ -161,22 +194,29 @@ class _MyHomePageState extends State<MyHomePage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _fetchVariants,
-                      child: const Text('Fetch Variants'),
-                    ),
-                    ElevatedButton(
-                      onPressed: _isLoading || _experimentClient == null
-                          ? null
-                          : () async {
-                              await _experimentClient!.clear();
-                              setState(() {
-                                _variants = {};
-                                _statusMessage = 'Variants cleared';
-                              });
-                            },
-                      child: const Text('Clear Variants'),
-                    ),
+                    if (_experimentClient == null)
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _initializeExperiment,
+                        child: const Text('Retry Initialize'),
+                      )
+                    else ...[
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _fetchVariants,
+                        child: const Text('Fetch Variants'),
+                      ),
+                      ElevatedButton(
+                        onPressed: _isLoading
+                            ? null
+                            : () async {
+                                await _experimentClient!.clear();
+                                setState(() {
+                                  _variants = {};
+                                  _statusMessage = 'Variants cleared';
+                                });
+                              },
+                        child: const Text('Clear Variants'),
+                      ),
+                    ],
                   ],
                 ),
               ],

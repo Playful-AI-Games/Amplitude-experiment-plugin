@@ -11,6 +11,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
   plugin_platform_interface: ^2.0.2
   http: ^1.1.0
   shared_preferences: ^2.2.2
@@ -48,6 +50,9 @@ flutter:
         pluginClass: AmplitudeExperimentPlugin
       ios:
         pluginClass: AmplitudeExperimentPlugin
+      web:
+        pluginClass: AmplitudeExperimentWeb
+        fileName: amplitude_experiment_web.dart
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:

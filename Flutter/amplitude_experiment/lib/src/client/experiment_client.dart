@@ -116,11 +116,15 @@ class ExperimentClient {
   }) async {
     final fetchUser = user ?? _user;
     
+    _logger.d('Fetching variants for user: ${fetchUser?.toJson()}');
+    
     // Apply user provider if available
     final enrichedUser = _enrichUserWithProvider(fetchUser);
     
     try {
       final variants = await _fetchInternal(enrichedUser, options);
+      
+      _logger.d('Fetched ${variants.length} variants');
       
       // Store variants
       _variants = {..._variants, ...variants};
@@ -133,6 +137,8 @@ class ExperimentClient {
       
       return variants;
     } catch (e) {
+      _logger.e('Fetch failed with error: $e');
+      
       if (_config.retryFetchOnFailure) {
         _startRetries(enrichedUser, options);
       }
@@ -141,7 +147,6 @@ class ExperimentClient {
         rethrow;
       }
       
-      _logger.e('Fetch failed', error: e);
       return {};
     }
   }
@@ -272,7 +277,26 @@ class ExperimentClient {
         );
       }
       
-      final Map<String, dynamic> data = response.body;
+      final responseBody = response.body;
+      _logger.d('Response body type: ${responseBody.runtimeType}');
+      _logger.d('Response body: $responseBody');
+      
+      // Ensure we have a Map
+      final Map<String, dynamic> data;
+      if (responseBody is Map<String, dynamic>) {
+        data = responseBody;
+      } else if (responseBody is String) {
+        // Sometimes the response might come as a string on web
+        try {
+          data = jsonDecode(responseBody) as Map<String, dynamic>;
+        } catch (e) {
+          _logger.e('Failed to parse response as JSON: $e');
+          throw FetchException('Invalid response format', response.statusCode);
+        }
+      } else {
+        _logger.e('Unexpected response type: ${responseBody.runtimeType}');
+        throw FetchException('Unexpected response format', response.statusCode);
+      }
       
       // Parse remote evaluation response
       return _parseRemoteResponse(data);

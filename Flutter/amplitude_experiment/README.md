@@ -1,303 +1,237 @@
 # Amplitude Experiment Flutter SDK
 
-Flutter SDK for Amplitude Experiment - Feature flagging and A/B testing for Flutter applications.
+A Flutter SDK for Amplitude Experiment - Feature flagging and A/B testing for Flutter applications.
 
 ## Features
 
-- 🚀 Easy integration with Flutter projects
-- 📱 Cross-platform support (iOS & Android)
-- 💾 Local storage for offline support
-- 🔄 Automatic retry with exponential backoff
-- 📊 Analytics integration support
-- 🎯 User targeting and segmentation
-- ⚡ Local and remote evaluation modes
+- 🚀 **Cross-platform Support**: iOS, Android, and Web
+- 🔄 **Remote Evaluation**: Fetch variants from Amplitude servers
+- 💾 **Local Storage**: Persist variants across app sessions
+- 🔁 **Automatic Retries**: Built-in exponential backoff for network requests
+- 👤 **User Context**: Set user properties for targeted experiments
+- 📦 **Singleton Pattern**: Easy integration with single client instance
 
 ## Installation
 
-Add this to your package's `pubspec.yaml` file:
+### Option 1: Local Path Dependency
+
+Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  amplitude_experiment: ^1.0.0
+  amplitude_experiment:
+    path: ../path/to/Amp-experiment/Flutter/amplitude_experiment
+```
+
+### Option 2: Git Dependency
+
+```yaml
+dependencies:
+  amplitude_experiment:
+    git:
+      url: https://your-git-repository.git
+      path: Flutter/amplitude_experiment  # Path to Flutter SDK in the repo
+      ref: main  # or specific branch/tag
 ```
 
 Then run:
-
 ```bash
 flutter pub get
 ```
 
 ## Quick Start
 
+### 1. Initialize the Client
+
 ```dart
 import 'package:amplitude_experiment/amplitude_experiment.dart';
 
-// Initialize the client
-final client = Experiment.initialize(
-  'YOUR_API_KEY',
-  config: const ExperimentConfig(
-    debug: true,
-    fetchOnStart: true,
-  ),
-);
+void main() {
+  // Initialize the Experiment client
+  final client = Experiment.initialize(
+    'YOUR_API_KEY',
+    config: const ExperimentConfig(
+      debug: true,
+      fetchOnStart: true,
+    ),
+  );
+  
+  runApp(MyApp());
+}
+```
 
-// Set user context
+### 2. Set User Context
+
+```dart
+// Set user properties for targeted experiments
 client.setUser(
   const ExperimentUser(
-    userId: 'user123',
-    deviceId: 'device456',
+    userId: 'user_123',
+    deviceId: 'device_456',
     userProperties: {
       'plan': 'premium',
       'accountAge': 30,
     },
   ),
 );
+```
 
-// Start the client
+### 3. Start the Client
+
+```dart
+// Start the client and fetch initial variants
 await client.start();
-
-// Fetch variants
-await client.fetch();
-
-// Get a variant
-final variant = client.variant(
-  'feature_flag_key',
-  fallback: const Variant(value: 'default'),
-);
-
-print('Variant value: ${variant.value}');
 ```
 
-## Configuration
-
-The SDK can be configured with various options:
+### 4. Fetch and Use Variants
 
 ```dart
-const config = ExperimentConfig(
-  // Enable debug logging
-  debug: true,
-  
-  // Instance name for multiple clients
-  instanceName: 'my_instance',
-  
-  // Fallback variant for all calls
-  fallbackVariant: Variant(value: 'default'),
-  
-  // Initial variants for bootstrapping
-  initialVariants: {'key': Variant(value: 'initial')},
-  
-  // Data source configuration
-  source: Source.localStorageAndServer,
-  
-  // Server configuration
-  serverUrl: 'https://api.lab.amplitude.com',
-  serverZone: 'US', // or 'EU'
-  
-  // Fetch configuration
-  fetchTimeoutMillis: 10000,
-  retryFetchOnFailure: true,
-  fetchOnStart: true,
-  
-  // Exposure tracking
-  automaticExposureTracking: true,
-);
-```
-
-## User Properties
-
-Set user properties for targeting:
-
-```dart
-client.setUser(
-  ExperimentUser(
-    userId: 'user123',
-    deviceId: 'device456',
-    
-    // Location properties
-    country: 'US',
-    city: 'San Francisco',
-    region: 'CA',
-    
-    // Device properties
-    platform: 'iOS',
-    os: '15.0',
-    deviceModel: 'iPhone 13',
-    
-    // Custom properties
-    userProperties: {
-      'subscription': 'premium',
-      'signupDate': '2023-01-01',
-      'totalSpent': 99.99,
-    },
-    
-    // Group properties for B2B
-    groups: {
-      'company': ['amplitude'],
-      'team': ['engineering', 'mobile'],
-    },
-  ),
-);
-```
-
-## Fetching Variants
-
-```dart
-// Fetch all variants
+// Fetch latest variants
 final variants = await client.fetch();
 
-// Fetch with options
-final variants = await client.fetch(
-  options: FetchOptions(
-    flagKeys: ['flag1', 'flag2'], // Fetch specific flags only
-    timeout: Duration(seconds: 5),
-  ),
-);
-
-// Get all current variants
-final allVariants = client.all();
-```
-
-## Getting Variants
-
-```dart
-// Get a single variant
-final variant = client.variant('button_color');
-
-// With fallback
-final variant = client.variant(
+// Get a specific variant
+final buttonColor = client.variant(
   'button_color',
   fallback: const Variant(value: 'blue'),
 );
 
-// Check variant value
-if (variant.value == 'red') {
-  // Show red button
-} else {
-  // Show default button
-}
-
-// Access payload data
-final config = variant.payload as Map<String, dynamic>?;
+// Use the variant value
+print('Button color: ${buttonColor.value}');
 ```
 
-## Storage and Persistence
-
-Variants are automatically persisted to local storage:
+## Configuration Options
 
 ```dart
-// Clear all stored variants
-await client.clear();
-
-// Variants are automatically loaded on start()
-await client.start(); // Loads from storage
-```
-
-## Exposure Tracking
-
-Track when users are exposed to experiments:
-
-```dart
-// Automatic tracking (enabled by default)
-final variant = client.variant('feature_flag'); // Automatically tracks exposure
-
-// Custom exposure tracking provider
-class MyExposureTracker implements ExposureTrackingProvider {
-  @override
-  void track(Exposure exposure) {
-    // Send to your analytics service
-    analytics.track('Experiment Exposure', {
-      'flag': exposure.flagKey,
-      'variant': exposure.variant,
-      'experiment': exposure.experimentKey,
-    });
-  }
-}
-
-// Use custom tracker
-final client = Experiment.initialize(
-  'API_KEY',
-  config: ExperimentConfig(
-    exposureTrackingProvider: MyExposureTracker(),
-  ),
+const ExperimentConfig(
+  // Enable debug logging
+  debug: true,
+  
+  // Fetch variants on client start
+  fetchOnStart: true,
+  
+  // Polling interval in milliseconds (0 to disable)
+  fetchPollingInterval: 0,
+  
+  // Server URL (defaults to Amplitude's servers)
+  serverUrl: 'https://api.lab.amplitude.com',
+  
+  // Request timeout in milliseconds
+  fetchTimeoutMs: 10000,
+  
+  // Retry configuration
+  retryFetchOnFailure: true,
+  retryMaxAttempts: 5,
+  retryTimeoutMs: 10000,
+  retryMinDelayMs: 500,
+  retryMaxDelayMs: 10000,
 );
 ```
 
-## Multiple Instances
+## Platform-Specific Setup
 
-You can create multiple client instances:
+### iOS
+No additional setup required.
 
-```dart
-// Main instance
-final mainClient = Experiment.initialize(
-  'MAIN_API_KEY',
-  config: const ExperimentConfig(
-    instanceName: 'main',
-  ),
-);
+### Android
+No additional setup required.
 
-// Test instance
-final testClient = Experiment.initialize(
-  'TEST_API_KEY',
-  config: const ExperimentConfig(
-    instanceName: 'test',
-  ),
-);
-```
-
-## Error Handling
-
-```dart
-try {
-  await client.fetch();
-} on FetchTimeoutException catch (e) {
-  print('Request timed out: $e');
-} on FetchException catch (e) {
-  print('Fetch failed: $e');
-}
-
-// Or configure to throw errors
-final client = Experiment.initialize(
-  'API_KEY',
-  config: const ExperimentConfig(
-    throwOnError: true, // Throw errors instead of silent handling
-  ),
-);
-```
-
-## Example App
-
-See the `example` folder for a complete Flutter app demonstrating the SDK usage.
+### Web
+Ensure CORS is properly configured on your Amplitude deployment if using custom server URLs.
 
 ## API Reference
 
 ### ExperimentClient
 
-- `start()` - Initialize and start the client
-- `stop()` - Stop the client and clean up
-- `fetch()` - Fetch variants from the server
-- `variant(key, [fallback])` - Get a variant by key
-- `all()` - Get all current variants
-- `clear()` - Clear stored variants
-- `setUser(user)` - Set the current user
-- `dispose()` - Dispose of resources
+#### `initialize(apiKey, config)`
+Creates or returns existing client instance.
 
-### ExperimentConfig
+#### `setUser(user)`
+Sets the user context for variant evaluation.
 
-- `debug` - Enable debug logging
-- `instanceName` - Instance identifier
-- `source` - Data source configuration
-- `serverUrl` - API server URL
-- `serverZone` - Server zone (US/EU)
-- `fetchTimeoutMillis` - Request timeout
-- `retryFetchOnFailure` - Enable retry on failure
-- `automaticExposureTracking` - Auto-track exposures
+#### `start()`
+Starts the client and optionally fetches initial variants.
 
-## Support
+#### `fetch()`
+Fetches variants from the server.
 
-For issues and questions, please visit:
-- [GitHub Issues](https://github.com/amplitude/experiment-flutter-client/issues)
-- [Amplitude Documentation](https://docs.amplitude.com/experiment)
+#### `variant(key, fallback)`
+Gets a specific variant by key.
 
-## License
+#### `all()`
+Returns all stored variants.
 
-MIT License - see LICENSE file for details
+#### `clear()`
+Clears all stored variants.
+
+#### `dispose()`
+Cleans up resources and removes from singleton cache.
+
+### ExperimentUser
+
+```dart
+const ExperimentUser({
+  String? userId,
+  String? deviceId,
+  String? country,
+  String? region,
+  String? dma,
+  String? city,
+  String? language,
+  String? platform,
+  String? version,
+  String? os,
+  String? deviceManufacturer,
+  String? deviceBrand,
+  String? deviceModel,
+  String? carrier,
+  String? library,
+  Map<String, dynamic>? userProperties,
+  Map<String, dynamic>? groups,
+  Map<String, Map<String, dynamic>>? groupProperties,
+});
+```
+
+### Variant
+
+```dart
+const Variant({
+  String? key,
+  String? value,
+  dynamic payload,
+  String? expKey,
+  Map<String, dynamic>? metadata,
+});
+```
+
+## Example Application
+
+See the `/example` folder for a complete Flutter application demonstrating:
+
+- Client initialization
+- User context setup
+- Variant fetching
+- Error handling
+- UI integration
+
+Run the example:
+
+```bash
+cd example
+flutter run
+```
+
+## Testing
+
+```bash
+flutter test
+```
+
+## Internal Development
+
+This SDK is for internal commercial use only. For questions or support, contact your internal development team.
+
+## Version
+
+Current version: 1.0.0
+
+See [CHANGELOG.md](CHANGELOG.md) for release history.

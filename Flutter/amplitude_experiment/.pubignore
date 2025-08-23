@@ -1,0 +1,39 @@
+# Exclude example app from package
+example/
+
+# Exclude test files from package
+test/
+integration_test/
+
+# Exclude documentation that's not needed in package
+*.md
+!README.md
+!CHANGELOG.md
+!LICENSE
+
+# Exclude development files
+.agents/
+.idea/
+.vscode/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+
+# Exclude analysis files
+analysis_options.yaml
+devtools_options.yaml
+
+# Exclude any build artifacts
+build/
+ios/Pods/
+android/.gradle/
+android/build/
+
+# Exclude git files
+.git/
+.gitignore
+
+# Exclude any local configuration
+.env
+.env.*
